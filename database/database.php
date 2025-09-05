@@ -674,11 +674,22 @@ public function createNextRecurringInvoiceWithChat($invoice_id) {
             return false;
         }
     }
+    
 
-    public function removeSpacePhoto($space_id) {
-    $sql = "UPDATE space SET Photo = NULL WHERE Space_ID = ?";
+public function removeSpacePhoto($space_id) {
+    // Set Photo, Photo1, Photo2, Photo3, Photo4, and Photo5 to NULL for the given space
+    $sql = "UPDATE space 
+            SET Photo = NULL, 
+                Photo1 = NULL, 
+                Photo2 = NULL, 
+                Photo3 = NULL, 
+                Photo4 = NULL, 
+                Photo5 = NULL 
+            WHERE Space_ID = ?";
     return $this->executeStatement($sql, [$space_id]);
 }
+
+
 
     public function updateHandyman($id, $fn, $ln, $phone, $jobtype_id) {
         $this->pdo->beginTransaction();
@@ -769,6 +780,7 @@ public function createNextRecurringInvoiceWithChat($invoice_id) {
         $sql = "SELECT 1 FROM space WHERE LOWER(TRIM(Name)) = LOWER(TRIM(?))";
         return (bool)$this->runQuery($sql, [$name]);
     }
+
 public function addNewSpace($name, $spacetype_id, $ua_id, $price, $photo_filename = null) {
     $street = 'General Luna Strt';
     $brgy = '10';
@@ -777,17 +789,26 @@ public function addNewSpace($name, $spacetype_id, $ua_id, $price, $photo_filenam
 
     $this->pdo->beginTransaction();
     try {
-        $sql1 = "INSERT INTO space (Name, SpaceType_ID, UA_ID, Street, Brgy, City, Photo, Price) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        // Insert into all columns as defined in your SQL
+        // Space_ID is assumed to be AUTO_INCREMENT or handled in DB
+        $sql1 = "INSERT INTO space (
+                    Name, SpaceType_ID, UA_ID, Street, Brgy, City, Photo, Price, Flow_Status,
+                    Photo1, Photo2, Photo3, Photo4, Photo5
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?, ?, ?)";
         $space_id = $this->insertAndGetId($sql1, [
-            $name, 
-            $spacetype_id, 
-            $ua_id, 
-            $street, 
-            $brgy, 
-            $city, 
-            $photo_filename, 
-            $price
+            $name,                // Name
+            $spacetype_id,        // SpaceType_ID
+            $ua_id,               // UA_ID
+            $street,              // Street
+            $brgy,                // Brgy
+            $city,                // City
+            $photo_filename,      // Photo (legacy/optional)
+            $price,               // Price
+            $photo_filename,      // Photo1 (main photo)
+            null,                 // Photo2
+            null,                 // Photo3
+            null,                 // Photo4
+            null                  // Photo5
         ]);
 
         if (!$space_id) {
@@ -805,19 +826,23 @@ public function addNewSpace($name, $spacetype_id, $ua_id, $price, $photo_filenam
     }
 }
 
-    public function getAllSpacesWithDetails() {
-        $sql = "SELECT s.*, t.SpaceTypeName 
-                FROM space s
-                LEFT JOIN spacetype t ON s.SpaceType_ID = t.SpaceType_ID
-                ORDER BY s.Space_ID DESC";
-        try {
-            return $this->pdo->query($sql)->fetchAll();
-        } catch (PDOException $e) {
-            return [];
-        }
-
-        
+public function getAllSpacesWithDetails() {
+    $sql = "SELECT s.*, t.SpaceTypeName 
+            FROM space s
+            LEFT JOIN spacetype t ON s.SpaceType_ID = t.SpaceType_ID
+            ORDER BY s.Space_ID DESC";
+    try {
+        // Only fetch spaces that still exist in the database
+        $spaces = $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        // Optionally, filter out any completely empty/deleted rows (defensive, should not be needed)
+        $spaces = array_filter($spaces, function($s) {
+            return !empty($s['Space_ID']);
+        });
+        return $spaces;
+    } catch (PDOException $e) {
+        return [];
     }
+}
     
     
     
@@ -1268,16 +1293,28 @@ public function markRentalRequestDone($client_id, $space_id) {
 
 
 
-    public function getSpacePhoto($space_id) {
-    $sql = "SELECT Photo FROM space WHERE Space_ID = ?";
+public function getSpacePhoto($space_id) {
+    // Return all photo fields (Photo, Photo1, Photo2, Photo3, Photo4, Photo5) for compatibility and multi-photo support
+    $sql = "SELECT Photo, Photo1, Photo2, Photo3, Photo4, Photo5 FROM space WHERE Space_ID = ?";
     return $this->runQuery($sql, [$space_id]);
 }
 
-public function updateSpacePhoto($space_id, $photo_filename) {
-    $sql = "UPDATE space SET Photo = ? WHERE Space_ID = ?";
-    return $this->executeStatement($sql, [$photo_filename, $space_id]);
-}
 
+
+public function updateSpacePhotoField($space_id, $photo_field, $photo_filename) {
+    // Only allow updating Photo1–Photo5 for safety
+    $allowed_fields = ['Photo1', 'Photo2', 'Photo3', 'Photo4', 'Photo5'];
+    if (!in_array($photo_field, $allowed_fields)) {
+        return false;
+    }
+    // Optionally also update legacy Photo if Photo1 is updated
+    $sql = ($photo_field === 'Photo1')
+        ? "UPDATE space SET $photo_field = ?, Photo = ? WHERE Space_ID = ?"
+        : "UPDATE space SET $photo_field = ? WHERE Space_ID = ?";
+    return ($photo_field === 'Photo1')
+        ? $this->executeStatement($sql, [$photo_filename, $photo_filename, $space_id])
+        : $this->executeStatement($sql, [$photo_filename, $space_id]);
+}
     public function rejectRentalRequest($request_id) {
         $sql = "UPDATE rentalrequest SET Status = 'Rejected' WHERE Request_ID = ? AND Status = 'Pending'";
         return $this->executeStatement($sql, [$request_id]);
