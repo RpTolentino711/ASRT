@@ -115,15 +115,83 @@ if (isset($_POST['hard_delete_client']) && isset($_POST['client_id'])) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Manage Users & Units</title>
+    <title>🧑‍💼 Manage Users & Units</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background-color: #181818;
+            color: #fff;
+        }
+        .sidebar {
+            width: 250px;
+            min-height: 100vh;
+            background-color: #202020;
+            position: fixed;
+            top: 0;
+            left: 0;
+            transition: transform 0.3s ease-in-out;
+        }
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+        .sidebar a {
+            display: block;
+            color: #ccc;
+            padding: 15px;
+            text-decoration: none;
+        }
+        .sidebar a:hover {
+            background-color: #333;
+            color: #0ef;
+        }
+        .content {
+            margin-left: 250px;
+            padding: 30px;
+            transition: margin-left 0.3s;
+        }
+        .toggle-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 1001;
+            color: #fff;
+        }
+        .theme-toggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #fff;
+        }
+        .table-dark th, .table-dark td {
+            color: #fff;
+        }
+    </style>
 </head>
-<body class="bg-light">
-<div class="container py-4">
+<body class="dark-mode">
+<div class="toggle-btn"><i class="fas fa-bars"></i></div>
+
+<div class="sidebar">
+    <h4 class="text-center text-white py-3"><i class="fas fa-crown"></i> Admin</h4>
+    <a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+    <a href="manage_user.php"><i class="fas fa-users"></i> Manage Users</a>
+    <a href="view_rental_requests.php"><i class="fas fa-clipboard-check"></i> Rental Requests</a>
+    <a href="manage_maintenance.php"><i class="fas fa-tools"></i> Maintenance</a>
+    <a href="generate_invoice.php"><i class="fas fa-file-invoice-dollar"></i> Invoices</a>
+    <a href="add_unit.php"><i class="fas fa-plus-square"></i> Add Unit</a>
+    <a href="admin_add_handyman.php"><i class="fas fa-plus-square"></i> Add Handy</a>
+    <a href="admin_kick_unpaid.php"><i class="fas fa-user-slash"></i> Overdue</a>
+    <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
+</div>
+
+<div class="content">
     <h2 class="mb-4"><i class="fas fa-users"></i> Manage Users & Units</h2>
-    <a href="dashboard.php" class="btn btn-secondary mb-3"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
     <?php if (!empty($msg)): ?>
         <div class="alert alert-info"><?= htmlspecialchars($msg) ?></div>
     <?php endif; ?>
@@ -131,7 +199,7 @@ if (isset($_POST['hard_delete_client']) && isset($_POST['client_id'])) {
     <!-- Clients table -->
     <h4 class="mt-4 mb-2">Clients</h4>
     <div class="table-responsive mb-5">
-        <table class="table table-bordered align-middle">
+        <table class="table table-bordered table-dark table-striped align-middle">
             <thead>
                 <tr>
                     <th>ID</th>
@@ -196,7 +264,7 @@ if (isset($_POST['hard_delete_client']) && isset($_POST['client_id'])) {
     <!-- Units table -->
     <h4 class="mt-4 mb-2">Units</h4>
     <div class="table-responsive">
-        <table class="table table-bordered align-middle">
+        <table class="table table-bordered table-dark table-striped align-middle">
             <thead>
                 <tr>
                     <th>ID</th>
@@ -237,15 +305,21 @@ if (isset($_POST['hard_delete_client']) && isset($_POST['client_id'])) {
             </tbody>
         </table>
     </div>
+    </div>
 </div>
 <script>
-document.querySelectorAll('.delete-unit-form').forEach(function(form) {
-    form.addEventListener('submit', function(e) {
-        if (!confirm('Permanently delete this unit and all its records? This cannot be undone!')) {
-            e.preventDefault();
-        }
+    document.querySelector('.toggle-btn').addEventListener('click', () => {
+        document.querySelector('.sidebar').classList.toggle('collapsed');
+        document.querySelector('.content').classList.toggle('collapsed');
     });
-});
+    document.querySelectorAll('.delete-unit-form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            if (!confirm('Permanently delete this unit and all its records? This cannot be undone!')) {
+                e.preventDefault();
+            }
+        });
+    });
 </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
